@@ -1,6 +1,6 @@
 {
   "name": "pp-middleman-integration",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Proof of concept integration using a middleman approach.",
   "main": "index.js",
   "scripts": {
@@ -13,7 +13,6 @@
     "release:major": "npm run build && npm version major",
     "release:quick": "npm run build && git add -A && git commit -m 'Quick Release Patch' && npm version patch",
     "postversion": "git push && git push --tags && gcloud docker -- push gcr.io/pp-middleman-integration/intaact:`node -p 'require('./package.json').version'`"
-    
   },
   "repository": {
     "type": "git",
