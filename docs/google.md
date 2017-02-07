@@ -1,6 +1,15 @@
 #Google Cloud Documentation
 This documentation will get you up and running quickly with google cloud
 
+#Prerequisites
+
+##Docker Installed
+```
+docker -v
+```
+Should return a version like Docker version 1.12.5, build 7392c3b
+
+
 ##Configuration
 You should set the following configuration options before proceeding
 ```
