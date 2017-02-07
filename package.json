@@ -13,7 +13,7 @@
     "release:major": "npm run build && npm version major",
     "release:quick": "npm run build && git add -A && git commit -m 'Quick Release Patch' && npm version patch",
     "gcloud:docker": "gcloud docker -- push gcr.io/pp-middleman-integration/intaact:v`node -p \"require('./package.json').version\"`",
-    "docker:build": "docker build -t gcr.io/pp-middleman-integration/intaact:v`node -p \"require('./package.json').version\"`",
+    "docker:build": "docker build -t gcr.io/pp-middleman-integration/intaact:v`node -p \"require('./package.json').version\"` .",
     "postversion": "git push --tags && npm run docker:build && npm run gcloud:docker"
   },
   "repository": {
