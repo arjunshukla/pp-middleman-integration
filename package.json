@@ -1,0 +1,36 @@
+{
+  "name": "pp-middleman-integration",
+  "version": "2.0.0",
+  "description": "Proof of concept integration using a middleman approach.",
+  "main": "index.js",
+  "scripts": {
+    "test": "npm test",
+    "build": "rm -rf ./dist && tsc",
+    "start": "node index.js",
+    "postinstall": "npm run build",
+    "release:patch": "npm run build && npm version patch",
+    "release:minor": "npm run build && npm version minor",
+    "release:major": "npm run build && npm version major",
+    "release:quick": "npm run build && git add -A && git commit -m 'Quick Release Patch' && npm version patch",
+    "postversion": "git push && git push --tags && gcloud docker -- push gcr.io/pp-middleman-integration/intaact:`node -p 'require('./package.json').version'`"
+    
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/trainerbill/pp-middleman-integration.git"
+  },
+  "author": "Andrew Throener",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/trainerbill/pp-middleman-integration/issues"
+  },
+  "homepage": "https://github.com/trainerbill/pp-middleman-integration#readme",
+  "dependencies": {
+    "express": "^4.14.1",
+    "kraken-js": "^2.1.0",
+    "paypal-rest-sdk": "^1.7.1"
+  },
+  "devDependencies": {
+    "typescript": "^2.1.5"
+  }
+}
