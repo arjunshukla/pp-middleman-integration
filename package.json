@@ -12,6 +12,8 @@
     "release:minor": "npm run build && npm version minor",
     "release:major": "npm run build && npm version major",
     "release:quick": "npm run build && git add -A && git commit -m 'Quick Release Patch' && npm version patch",
+    "gcloud:set": "kubectl set image deployment/intaact intaact=gcr.io/pp-middleman-integration/intaact:v`node -p \"require('./package.json').version\"`",
+    "gcloud:deploy": "kubectl run intaact --image=gcr.io/pp-middleman-integration/intaact:v`node -p \"require('./package.json').version\"` --port=8000",
     "gcloud:docker": "gcloud docker -- push gcr.io/pp-middleman-integration/intaact:v`node -p \"require('./package.json').version\"`",
     "docker:build": "docker build -t gcr.io/pp-middleman-integration/intaact:v`node -p \"require('./package.json').version\"` .",
     "postversion": "git push --tags && npm run docker:build && npm run gcloud:docker"
