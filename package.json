@@ -13,9 +13,12 @@
     "release:major": "npm run build && npm version major",
     "release:quick": "npm run build && git add -A && git commit -m 'Quick Release Patch' && npm version patch",
     "gcloud:set": "kubectl set image deployment/intaact intaact=gcr.io/pp-middleman-integration/intaact:v`node -p \"require('./package.json').version\"`",
-    "gcloud:deploy": "kubectl run intaact --image=gcr.io/pp-middleman-integration/intaact:v`node -p \"require('./package.json').version\"` --port=8000",
-    "gcloud:docker": "gcloud docker -- push gcr.io/pp-middleman-integration/intaact:v`node -p \"require('./package.json').version\"`",
-    "docker:build": "docker build -t gcr.io/pp-middleman-integration/intaact:v`node -p \"require('./package.json').version\"` .",
+    "gcloud:deploy": "kubectl run `gcloud config get-value container/cluster` --image=gcr.io/`gcloud config get-value project`/`gcloud config get-value container/cluster`:v`node -p \"require('./package.json').version\"` --port=8000",
+    "gcloud:docker": "gcloud docker -- push gcr.io/`gcloud config get-value project`/`gcloud config get-value container/cluster`:v`node -p \"require('./package.json').version\"`",
+    "gcloud:create": "gcloud container clusters create `gcloud config get-value container/cluster` --machine-type=f1-micro && gcloud container clusters get-credentials `gcloud config get-value container/cluster`",
+    "gcloud:expose": "kubectl expose deployment `gcloud config get-value container/cluster` --type=LoadBalancer --port=80 --target-port=8000",
+    "gcloud:quickstart": "npm run docker:build && npm run gcloud:docker && npm run gcloud:create && npm run gcloud:deploy && npm run gcloud:expose",
+    "docker:build": "docker build -t gcr.io/`gcloud config get-value project`/`gcloud config get-value container/cluster`:v`node -p \"require('./package.json').version\"` .",
     "postversion": "git push --tags && npm run docker:build && npm run gcloud:docker"
   },
   "repository": {
