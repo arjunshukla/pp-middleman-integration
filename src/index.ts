@@ -4,7 +4,6 @@ import * as kraken from 'kraken-js';
 import * as mongoose from 'mongoose';
 import * as chalk from 'chalk';
 
-
 async function initModules() {
     let modules = Modules.values();
     let mod;
@@ -39,7 +38,8 @@ async function startServer() {
 
 async function startDatabase() {
     return new Promise((resolve, reject) => {
-       
+            mongoose.Promise = Promise;
+            mongoose.set('debug', process.env.MONGOOSE_DEBUG ? true : false);
             db = mongoose.createConnection(process.env.MONGOOSE_URI || 'mongodb://localhost/paypal');
             db.on('connected', () => {
                 console.log(chalk.green.bold(`Mongoose Connected | host: ${db.host} | port: ${db.port} | name: ${db.name}`));
@@ -61,7 +61,7 @@ async function start() {
 
 
 // Define Express Server
-let app, db, server;
+export let app, db, server;
 
 try {
     start();    

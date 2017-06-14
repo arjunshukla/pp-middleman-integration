@@ -1,19 +1,20 @@
 import { PayPalRestModule, PayPalWebhooksModule, PayPalRestApiConfig } from './modules/paypal';
-import { IntacctModule, IntacctInvoicingModule, IntacctApiConfig } from './modules/intacct';
+import { IntacctModule, IntacctInvoicingModule } from './modules/intacct';
 import { BaseModule } from './modules/classes';
 
+/*
 let intacctConfig: IntacctApiConfig = {
     name: "IntacctApiModule",
     config: {
-        senderId: "",
-        senderPassword: "",
-        userId: "",
-        password: "",
-        companyId: "" 
+        senderId: "PayPal",
+        senderPassword: "h@W*o3189F",
+        userId: "Guest",
+        password: "P@ssw0rd",
+        companyId: "PayPal-DEV" 
     }
     
 };
-
+*/
 let paypalRestConfig: PayPalRestApiConfig = {
     name: "PayPalRestApiModule",
     config: {
@@ -29,7 +30,7 @@ export let Modules = new Map<string, BaseModule | any>([
         new PayPalWebhooksModule()
     )],
     ['IntacctModule', new IntacctModule(
-        intacctConfig,
+        //intacctConfig,
         new IntacctInvoicingModule()
     )]
 ]);
