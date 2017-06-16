@@ -1,3 +1,5 @@
+
+
 export interface BaseConfig {
     name: string,
     config: any
@@ -12,6 +14,7 @@ export class BaseModule {
 
     protected configuration: Map<string, any>;
     protected name: string;
+    protected log;
 
     constructor(...args) {
 
@@ -31,7 +34,9 @@ export class BaseModule {
                 .map(key => 
                     this.configuration.set(key, realconfig[key])
                 );
-        }  
+        }
+
+        
     }
 
     getName(): string {
