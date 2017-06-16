@@ -65,7 +65,8 @@ async function startLogger() {
     winston.level = process.env.LOG_LEVEL || 'info';
     winston.add(MongoDB, {
         db: process.env.MONGOOSE_URI,
-        level: 'error'
+        level: 'error',
+        expireAfterSeconds: 60*60*24*30
     });
     
 }
