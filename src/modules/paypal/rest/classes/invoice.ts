@@ -102,6 +102,10 @@ export class PayPalInvoiceModule extends BaseModule {
         response.invoices.forEach(async (invoice) => {
             try {
                 await this.save(invoice);
+                // Send PayPal Invoice
+                    if (invoice.status === 'DRAFT') {
+                        await this.send(invoice.id);
+                    }
             } catch (err) {
                 winston.error(err);
             }

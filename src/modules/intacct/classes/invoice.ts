@@ -23,7 +23,7 @@ export class IntacctInvoiceModule extends BaseModule {
         
         let date = new Date();
         date.setDate(date.getDate() - 1);
-        this.queryString = process.env.INTACCT_INVOICE_QUERY || `RAWSTATE = 'A' AND PAYPALINVOICEID is null AND  WHENCREATED > "${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}"`;
+        this.queryString = process.env.INTACCT_INVOICE_QUERY || `RAWSTATE = 'A' AND PAYPALINVOICEMESSAGE not like 'Invoice Sent Successfully' AND  WHENCREATED > "${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}"`;
         
     }
 
@@ -55,6 +55,13 @@ export class IntacctInvoiceModule extends BaseModule {
         return cid.get('arinvoice') || [];
     }
 
+// TODO: Pass multiple RECORDNOs and make just one read call to Intacct
+    async read(RECORDNO){
+        const cid = intacctapi.IntacctApi.read({ object: 'ARINVOICE', keys: RECORDNO });
+        await intacct.request(cid);
+        return cid.data.ARINVOICE[0] || [];//get('arinvoice') || [];
+    }
+
     async save(invoice) {
         return await this.model.findOneAndUpdate({ RECORDNO: invoice.RECORDNO }, invoice, { upsert: true, returnNewDocument: true }); 
     }
@@ -68,47 +75,137 @@ export class IntacctInvoiceModule extends BaseModule {
         }, this.interval);
     }
 
-    async toPaypalJson(invoice) {
-        return {
-                "reference": invoice.RECORDNO,
-                "billing_info": [{
-                    "email": "buyer1@awesome.com"
-                }],
-                "items": [{
-                    "name": "Sutures",
-                    "quantity": 100,
-                    "unit_price": {
-                        "currency": "USD",
-                        "value": 5
-                    }
-                }],
-                "note": "Medical Invoice 16 Jul, 2013 PST",
-                "payment_term": {
-                    "term_type": "NET_45"
-                },
-                "shipping_info": {
-                    "first_name": "Sally",
-                    "last_name": "Patient",
-                    "business_name": "Not applicable",
-                    "phone": {
-                        "country_code": "001",
-                        "national_number": "5039871234"
-                    },
-                    "address": {
-                        "line1": "1234 Broad St.",
-                        "city": "Portland",
-                        "state": "OR",
-                        "postal_code": "97216",
-                        "country_code": "US"
-                    }
-                },
-                "tax_inclusive": false,
-                "total_amount": {
-                    "currency": "USD",
-                    "value": "500.00"
-                }
-            };
+
+
+
+    async toPaypalJson1(invoice) {
+
+
+
+        // return {
+            //     "reference": invoice.RECORDNO,
+            //     "billing_info": [{
+            //         "email": "buyer1@awesome.com"
+            //     }],
+            //     "items": [{
+            //         "name": "Sutures",
+            //         "quantity": 100,
+            //         "unit_price": {
+            //             "currency": "USD",
+            //             "value": 5
+            //         }
+            //     }],
+            //     "note": "Medical Invoice 16 Jul, 2013 PST",
+            //     "payment_term": {
+            //         "term_type": "NET_45"
+            //     },
+            //     "shipping_info": {
+            //         "first_name": "Sally",
+            //         "last_name": "Patient",
+            //         "business_name": "Not applicable",
+            //         "phone": {
+            //             "country_code": "001",
+            //             "national_number": "5039871234"
+            //         },
+            //         "address": {
+            //             "line1": "1234 Broad St.",
+            //             "city": "Portland",
+            //             "state": "OR",
+            //             "postal_code": "97216",
+            //             "country_code": "US"
+            //         }
+            //     },
+            //     "tax_inclusive": false,
+            //     "total_amount": {
+            //         "currency": "USD",
+            //         "value": "500.00"
+            //     }
+            // };
     }
+
+// Take a param: Intacct Invoice Object 
+async toPaypalJson(intacctInvoiceJSON) {
+
+    // extract line items...
+
+    let arrPPInvItems = await this.toPayPalLineItems(intacctInvoiceJSON.ARINVOICEITEMS.arinvoiceitem);
+
+    let createInvoiceJSON = {
+        'merchant_info': {
+            'email': process.env.PAYPAL_MERCHANT_EMAIL,
+            'first_name': process.env.PAYPAL_MERCHANT_FIRST_NAME,
+            'last_name': process.env.PAYPAL_MERCHANT_LAST_NAME,
+            'business_name': process.env.PAYPAL_MERCHANT_BUSINESS_NAME,
+            'phone': {
+                'country_code': process.env.PAYPAL_MERCHANT_PHONE_COUNTRY_CODE,
+                'national_number': process.env.PAYPAL_MERCHANT_PHONE_NUMBER
+            },
+            'address': {
+                'line1': process.env.PAYPAL_MERCHANT_ADDRESS_LINE1,
+                'city': process.env.PAYPAL_MERCHANT_ADDRESS_CITY,
+                'state': process.env.PAYPAL_MERCHANT_COUNTRY_STATE,
+                'postal_code': process.env.PAYPAL_MERCHANT_COUNTRY_POSTAL_CODE,
+                'country_code': process.env.PAYPAL_MERCHANT_COUNTRY_CODE
+            }
+        },
+        'billing_info': [{
+            'email': intacctInvoiceJSON.BILLTO.EMAIL1
+        }],
+        'items': arrPPInvItems,
+        'note': intacctInvoiceJSON.CUSTMESSAGE.MESSAGE,
+        'payment_term': {
+            'term_type': intacctInvoiceJSON.TERMNAME
+        },
+        'shipping_info': {
+            'first_name': intacctInvoiceJSON.SHIPTO.FIRSTNAME,
+            'last_name': intacctInvoiceJSON.SHIPTO.LASTNAME,
+            'business_name': intacctInvoiceJSON.SHIPTO.CONTACTNAME,
+            'phone': {
+                'country_code': '',
+                'national_number': intacctInvoiceJSON.SHIPTO.PHONE1
+            },
+            'address': {
+                'line1': intacctInvoiceJSON.SHIPTO.MAILADDRESS.ADDRESS1 + '\n' + intacctInvoiceJSON.SHIPTO.MAILADDRESS.ADDRESS2,
+                'city': intacctInvoiceJSON.SHIPTO.MAILADDRESS.CITY,
+                'state': intacctInvoiceJSON.SHIPTO.MAILADDRESS.STATE,
+                'postal_code': intacctInvoiceJSON.SHIPTO.MAILADDRESS.ZIP,
+                'country_code': intacctInvoiceJSON.SHIPTO.MAILADDRESS.COUNTRYCODE
+            }
+        },
+        'tax_inclusive': true,
+        'total_amount': {
+            'currency': intacctInvoiceJSON.CURRENCY,
+            'value': intacctInvoiceJSON.TRX_TOTALENTERED
+        }
+    };
+
+    console.log(JSON.stringify(createInvoiceJSON, null, 2));
+
+    return createInvoiceJSON;
+}
+
+// Method to extract 
+async toPayPalLineItems(arrInvoiceItems) {
+
+    let arrPPInvItems = [];
+
+    if (arrInvoiceItems.length > 0) {
+        for (var i = 0; i < arrInvoiceItems.length; i++) {
+            arrPPInvItems.push({
+                'name': arrInvoiceItems[i].ITEMNAME == '' ? 'Item1' : arrInvoiceItems[i].ITEMNAME,
+                'quantity': 1,
+                'unit_price': {
+                    'currency': arrInvoiceItems[i].CURRENCY,
+                    'value': arrInvoiceItems[i].AMOUNT
+                }
+            });
+        }
+        return arrPPInvItems;
+    }
+    else {
+        return arrPPInvItems;
+    }
+}
 
     async sync() {
         try {
@@ -124,7 +221,8 @@ export class IntacctInvoiceModule extends BaseModule {
                     
                     // Create or Find PayPal Invoice
                     if (!intacctinvoice.PAYPALINVOICEID) {
-                        ppinvoice = await this.PayPalInvoiceModule.create(this.toPaypalJson(invoice));
+                        let intacctInvoice = await this.read(invoice.RECORDNO);
+                        ppinvoice = await this.PayPalInvoiceModule.create(this.toPaypalJson(intacctInvoice));
                         intacctinvoice.PAYPALINVOICEID = ppinvoice.id;
                     } else {
                         ppinvoice = await this.PayPalInvoiceModule.find(intacctinvoice.PAYPALINVOICEID);
@@ -138,6 +236,7 @@ export class IntacctInvoiceModule extends BaseModule {
                     intacctinvoice.PAYPALINVOICEMESSAGE = 'Invoice Sent Successfully';
             
                 } catch (err) {
+                    intacctinvoice.PAYPALINVOICEMESSAGE = JSON.stringify(err);
                     winston.error(err);
                 }
 
