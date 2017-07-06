@@ -20,7 +20,7 @@ export class PayPalInvoiceModule extends BaseModule {
 
     private model;
     private interval = process.env.PAYPAL_INVOICE_INTERVAL || 60000;
-    private merchant_email = process.env.PAYPAL_INVOICE_EMAIL;
+    // private merchant_email = process.env.PAYPAL_INVOICE_EMAIL;
 
 
     constructor(...args) {
@@ -54,7 +54,8 @@ export class PayPalInvoiceModule extends BaseModule {
     }
 
     async create(invoice) {
-        invoice.merchant_info = {
+        // TODO: Remove merchant info
+        /*invoice.merchant_info = {
             email: this.merchant_email,
             first_name: "Dennis",
             last_name: "Doctor",
@@ -70,7 +71,7 @@ export class PayPalInvoiceModule extends BaseModule {
                 postal_code: "97217",
                 country_code: "US"
             }
-        };
+        };*/
         return new Promise((resolve, reject) => {
             PayPalRest.invoice.create(invoice, (error, invoice) => error ? reject(error) : resolve(invoice));
         });

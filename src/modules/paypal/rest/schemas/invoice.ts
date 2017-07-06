@@ -11,7 +11,10 @@ let Schema = {
     status: String,
     billing_info: [
         {
-          email: String
+          email: {
+              type: String,
+              required: true
+            }
         }
     ],
     invoice_date: Date,

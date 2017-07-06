@@ -1,5 +1,7 @@
 import * as mongoose from 'mongoose';
 
+// TODO: Add missing keys...
+
 let options = {
   timestamps: true
 }

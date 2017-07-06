@@ -23,7 +23,7 @@ export class IntacctInvoiceModule extends BaseModule {
         
         let date = new Date();
         date.setDate(date.getDate() - 1);
-        this.queryString = process.env.INTACCT_INVOICE_QUERY || `RAWSTATE = 'A' AND PAYPALINVOICEMESSAGE not like 'Invoice Sent Successfully' AND  WHENCREATED > "${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}"`;
+        this.queryString = process.env.INTACCT_INVOICE_QUERY || `RAWSTATE = 'A' AND PAYPALINVOICEMESSAGE IS NULL AND WHENCREATED > "${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}"`;
         
     }
 
@@ -165,7 +165,7 @@ async toPaypalJson(intacctInvoiceJSON) {
                 'national_number': intacctInvoiceJSON.SHIPTO.PHONE1
             },
             'address': {
-                'line1': intacctInvoiceJSON.SHIPTO.MAILADDRESS.ADDRESS1 + '\n' + intacctInvoiceJSON.SHIPTO.MAILADDRESS.ADDRESS2,
+                'line1': intacctInvoiceJSON.SHIPTO.MAILADDRESS.ADDRESS1 + ' ' + intacctInvoiceJSON.SHIPTO.MAILADDRESS.ADDRESS2,
                 'city': intacctInvoiceJSON.SHIPTO.MAILADDRESS.CITY,
                 'state': intacctInvoiceJSON.SHIPTO.MAILADDRESS.STATE,
                 'postal_code': intacctInvoiceJSON.SHIPTO.MAILADDRESS.ZIP,
@@ -175,11 +175,11 @@ async toPaypalJson(intacctInvoiceJSON) {
         'tax_inclusive': true,
         'total_amount': {
             'currency': intacctInvoiceJSON.CURRENCY,
-            'value': intacctInvoiceJSON.TRX_TOTALENTERED
+            'value': Number(intacctInvoiceJSON.TRX_TOTALENTERED)
         }
     };
 
-    console.log(JSON.stringify(createInvoiceJSON, null, 2));
+    console.log("PP Invoice JSON: \n" + JSON.stringify(createInvoiceJSON, null, 2));
 
     return createInvoiceJSON;
 }
@@ -192,11 +192,11 @@ async toPayPalLineItems(arrInvoiceItems) {
     if (arrInvoiceItems.length > 0) {
         for (var i = 0; i < arrInvoiceItems.length; i++) {
             arrPPInvItems.push({
-                'name': arrInvoiceItems[i].ITEMNAME == '' ? 'Item1' : arrInvoiceItems[i].ITEMNAME,
+                'name': arrInvoiceItems[i].ITEMNAME == "" ? ('Item '+ arrInvoiceItems[i].LINE_NO) : arrInvoiceItems[i].ACCOUNTTITLE,
                 'quantity': 1,
                 'unit_price': {
                     'currency': arrInvoiceItems[i].CURRENCY,
-                    'value': arrInvoiceItems[i].AMOUNT
+                    'value': Number(arrInvoiceItems[i].AMOUNT)
                 }
             });
         }
@@ -217,12 +217,18 @@ async toPayPalLineItems(arrInvoiceItems) {
                     intacctinvoice = await this.model.findOne({ RECORDNO: invoice.RECORDNO });
                     if (!intacctinvoice) {
                         intacctinvoice = new this.model(invoice);
+
+                        // TODO: check and add mongoose validator...
+                        // intacctinvoice.validate(err => {
+                        //     throw err;
+                        // });
                     }
                     
                     // Create or Find PayPal Invoice
                     if (!intacctinvoice.PAYPALINVOICEID) {
                         let intacctInvoice = await this.read(invoice.RECORDNO);
                         ppinvoice = await this.PayPalInvoiceModule.create(this.toPaypalJson(intacctInvoice));
+console.log();
                         intacctinvoice.PAYPALINVOICEID = ppinvoice.id;
                     } else {
                         ppinvoice = await this.PayPalInvoiceModule.find(intacctinvoice.PAYPALINVOICEID);
