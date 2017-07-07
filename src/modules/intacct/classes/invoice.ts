@@ -124,11 +124,11 @@ export class IntacctInvoiceModule extends BaseModule {
     }
 
 // Take a param: Intacct Invoice Object 
-async toPaypalJson(intacctInvoiceJSON) {
+toPaypalJson(intacctInvoiceJSON) {
 
     // extract line items...
 
-    let arrPPInvItems = await this.toPayPalLineItems(intacctInvoiceJSON.ARINVOICEITEMS.arinvoiceitem);
+    let arrPPInvItems = this.toPayPalLineItems(intacctInvoiceJSON.ARINVOICEITEMS.arinvoiceitem);
 
     let createInvoiceJSON = {
         'merchant_info': {
@@ -154,7 +154,7 @@ async toPaypalJson(intacctInvoiceJSON) {
         'items': arrPPInvItems,
         'note': intacctInvoiceJSON.CUSTMESSAGE.MESSAGE,
         'payment_term': {
-            'term_type': intacctInvoiceJSON.TERMNAME
+            'term_type': 'NET_45'//intacctInvoiceJSON.TERMNAME
         },
         'shipping_info': {
             'first_name': intacctInvoiceJSON.SHIPTO.FIRSTNAME,
@@ -175,7 +175,7 @@ async toPaypalJson(intacctInvoiceJSON) {
         'tax_inclusive': true,
         'total_amount': {
             'currency': intacctInvoiceJSON.CURRENCY,
-            'value': Number(intacctInvoiceJSON.TRX_TOTALENTERED)
+            'value': intacctInvoiceJSON.TRX_TOTALENTERED
         }
     };
 
@@ -185,7 +185,7 @@ async toPaypalJson(intacctInvoiceJSON) {
 }
 
 // Method to extract 
-async toPayPalLineItems(arrInvoiceItems) {
+toPayPalLineItems(arrInvoiceItems) {
 
     let arrPPInvItems = [];
 
@@ -196,7 +196,7 @@ async toPayPalLineItems(arrInvoiceItems) {
                 'quantity': 1,
                 'unit_price': {
                     'currency': arrInvoiceItems[i].CURRENCY,
-                    'value': Number(arrInvoiceItems[i].AMOUNT)
+                    'value': arrInvoiceItems[i].AMOUNT
                 }
             });
         }
@@ -210,7 +210,7 @@ async toPayPalLineItems(arrInvoiceItems) {
     async sync() {
         try {
             let qinvoices = await this.query();
-            await qinvoices.forEach(async invoice => {
+            for (let invoice of qinvoices) {
                 let intacctinvoice, ppinvoice;
                 try {
                     // Find or Create Invoice Model
@@ -218,7 +218,7 @@ async toPayPalLineItems(arrInvoiceItems) {
                     if (!intacctinvoice) {
                         intacctinvoice = new this.model(invoice);
 
-                        // TODO: check and add mongoose validator...
+                        // TODO: check and add mongoose validator and store in DB...
                         // intacctinvoice.validate(err => {
                         //     throw err;
                         // });
@@ -227,8 +227,8 @@ async toPayPalLineItems(arrInvoiceItems) {
                     // Create or Find PayPal Invoice
                     if (!intacctinvoice.PAYPALINVOICEID) {
                         let intacctInvoice = await this.read(invoice.RECORDNO);
+                        // let ppInvObj = this.toPaypalJson(intacctInvoice);
                         ppinvoice = await this.PayPalInvoiceModule.create(this.toPaypalJson(intacctInvoice));
-console.log();
                         intacctinvoice.PAYPALINVOICEID = ppinvoice.id;
                     } else {
                         ppinvoice = await this.PayPalInvoiceModule.find(intacctinvoice.PAYPALINVOICEID);
@@ -255,7 +255,7 @@ console.log();
 
                 await intacctinvoice.save();
                 await ppinvoice.save();
-            });
+            }
 
         } catch (err) {
             winston.error(err);
