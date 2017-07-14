@@ -145,7 +145,7 @@ toPaypalJson(intacctInvoiceJSON) {
                 'city': process.env.PAYPAL_MERCHANT_ADDRESS_CITY,
                 'state': process.env.PAYPAL_MERCHANT_COUNTRY_STATE,
                 'postal_code': process.env.PAYPAL_MERCHANT_COUNTRY_POSTAL_CODE,
-                'country_code': process.env.PAYPAL_MERCHANT_COUNTRY_CODE
+                'country_code': process.env.PAYPAL_MERCHANT_COUNTRY_CODE.length == 2 ? process.env.PAYPAL_MERCHANT_COUNTRY_CODE : 'US' // Length has to be 2
             }
         },
         'billing_info': [{
@@ -154,14 +154,14 @@ toPaypalJson(intacctInvoiceJSON) {
         'items': arrPPInvItems,
         'note': intacctInvoiceJSON.CUSTMESSAGE.MESSAGE,
         'payment_term': {
-            'term_type': 'NET_45'//intacctInvoiceJSON.TERMNAME
+            'term_type': intacctInvoiceJSON.TERMNAME != '' ? intacctInvoiceJSON.TERMNAME : 'NET_45'
         },
         'shipping_info': {
             'first_name': intacctInvoiceJSON.SHIPTO.FIRSTNAME,
             'last_name': intacctInvoiceJSON.SHIPTO.LASTNAME,
             'business_name': intacctInvoiceJSON.SHIPTO.CONTACTNAME,
             'phone': {
-                'country_code': '',
+                'country_code': '001', // null from Intacct, added 001 as seen from PP API docs, currently only US supported
                 'national_number': intacctInvoiceJSON.SHIPTO.PHONE1
             },
             'address': {
@@ -169,7 +169,7 @@ toPaypalJson(intacctInvoiceJSON) {
                 'city': intacctInvoiceJSON.SHIPTO.MAILADDRESS.CITY,
                 'state': intacctInvoiceJSON.SHIPTO.MAILADDRESS.STATE,
                 'postal_code': intacctInvoiceJSON.SHIPTO.MAILADDRESS.ZIP,
-                'country_code': intacctInvoiceJSON.SHIPTO.MAILADDRESS.COUNTRYCODE
+                'country_code': intacctInvoiceJSON.SHIPTO.MAILADDRESS.COUNTRYCODE != '' ? intacctInvoiceJSON.SHIPTO.MAILADDRESS.COUNTRYCODE : 'US'
             }
         },
         'tax_inclusive': true,
@@ -219,10 +219,14 @@ toPayPalLineItems(arrInvoiceItems) {
                         intacctinvoice = new this.model(invoice);
 
                         // TODO: check and add mongoose validator and store in DB...
-                        // intacctinvoice.validate(err => {
+                        
+                        await intacctinvoice.validate()//(err => {
+                            // if(err)
                         //     throw err;
                         // });
+                        
                     }
+                    
                     
                     // Create or Find PayPal Invoice
                     if (!intacctinvoice.PAYPALINVOICEID) {
@@ -240,7 +244,7 @@ toPayPalLineItems(arrInvoiceItems) {
                     }
                     
                     intacctinvoice.PAYPALINVOICEMESSAGE = 'Invoice Sent Successfully';
-            
+                    // await ppinvoice.save();
                 } catch (err) {
                     intacctinvoice.PAYPALINVOICEMESSAGE = JSON.stringify(err);
                     winston.error(err);
